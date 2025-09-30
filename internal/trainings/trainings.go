@@ -13,10 +13,10 @@ import (
 )
 
 type Training struct {
-	Steps        int
-	TrainingType string
-	Duration     time.Duration
-	Personal     personaldata.Personal
+	Steps                 int
+	TrainingType          string
+	Duration              time.Duration
+	personaldata.Personal // <-- ЭМБЕДДИНГ: поднимает Weight/Height и методы (Validate, Print)
 }
 
 var ErrInvalidInput = errors.New("invalid training input")
@@ -99,24 +99,27 @@ func (t *Training) Parse(line string) error {
 }
 
 func (t Training) ActionInfo() (string, error) {
-	if err := t.Personal.Validate(); err != nil {
+
+	if err := t.Validate(); err != nil {
 		return "", err
 	}
+
 	switch t.TrainingType {
 	case "Бег", "Ходьба":
 	default:
 		return "", ErrInvalidInput
 	}
 
-	dist := spentenergy.Distance(t.Steps, t.Personal.Height)
-	speed := spentenergy.MeanSpeed(t.Steps, t.Personal.Height, t.Duration)
+	// Доступ к Weight/Height также поднят
+	dist := spentenergy.Distance(t.Steps, t.Height)
+	speed := spentenergy.MeanSpeed(t.Steps, t.Height, t.Duration)
 
 	var cal float64
 	var err error
 	if t.TrainingType == "Бег" {
-		cal, err = spentenergy.RunningSpentCalories(t.Steps, t.Personal.Weight, t.Personal.Height, t.Duration)
+		cal, err = spentenergy.RunningSpentCalories(t.Steps, t.Weight, t.Height, t.Duration)
 	} else {
-		cal, err = spentenergy.WalkingSpentCalories(t.Steps, t.Personal.Weight, t.Personal.Height, t.Duration)
+		cal, err = spentenergy.WalkingSpentCalories(t.Steps, t.Weight, t.Height, t.Duration)
 	}
 	if err != nil {
 		return "", err
@@ -126,13 +129,4 @@ func (t Training) ActionInfo() (string, error) {
 		"Тип тренировки: %s\nДлительность: %.2f ч.\nДистанция: %.2f км.\nСкорость: %.2f км/ч\nСожгли калорий: %.2f\n",
 		t.TrainingType, t.Duration.Hours(), dist, speed, cal,
 	), nil
-}
-
-// не обязателен для тестов, но нужен, если main.go вызывает Print()
-func (t Training) Print() {
-	if s, err := t.ActionInfo(); err == nil {
-		fmt.Print(s)
-	} else {
-		fmt.Println("ошибка:", err)
-	}
 }

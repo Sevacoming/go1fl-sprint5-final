@@ -15,7 +15,7 @@ import (
 type DaySteps struct {
 	Steps                 int
 	Duration              time.Duration
-	personaldata.Personal // встраиваем: поля Weight/Height «поднимаются» наружу
+	personaldata.Personal // <-- ЭМБЕДДИНГ
 }
 
 var ErrInvalidInput = errors.New("invalid daysteps input")
@@ -98,7 +98,8 @@ func (d DaySteps) ActionInfo() (string, error) {
 	if d.Steps <= 0 || d.Duration <= 0 {
 		return "", ErrInvalidInput
 	}
-	if err := d.Personal.Validate(); err != nil {
+	// ВАЖНО: используем поднятый метод
+	if err := d.Validate(); err != nil {
 		return "", err
 	}
 
